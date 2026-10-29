@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meridian Research Capital</title>
+<style>
+  :root {
+    --bg: #f6f5f1; --card: #ffffff; --text: #1f1e1c; --muted: #6b6a66; --line: #e3e1da;
+    --accent: #1d5fa5; --accent-bg: #e6f0fb; --ok: #2f6b12; --ok-bg: #eaf3de;
+    --warn: #7a4a06; --warn-bg: #faeeda; --bad: #a32d2d; --bad-bg: #fcebeb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #161614; --card: #1f1f1d; --text: #ecebe6; --muted: #a3a29c; --line: #34332f;
+      --accent: #85b7eb; --accent-bg: #0c2f52; --ok: #97c459; --ok-bg: #1f3a0b;
+      --warn: #efb04f; --warn-bg: #4a3005; --bad: #f09595; --bad-bg: #4d1717;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+           padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--card); }
+  .brand { font-weight: 600; font-size: 17px; }
+  .brand small { display: block; font-weight: 400; font-size: 12px; color: var(--muted); }
+  main { max-width: 880px; margin: 0 auto; padding: 20px 16px 60px; display: grid; gap: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
+  .card h2 { margin: 0 0 4px; font-size: 18px; font-weight: 600; }
+  .label { font-size: 12px; color: var(--muted); margin: 0 0 2px; }
+  .sub { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
+  .stat { background: var(--bg); border-radius: 8px; padding: 10px 12px; }
+  .stat b { display: block; font-size: 17px; font-weight: 600; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+  input { font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--text); min-width: 0; }
+  input.addr { flex: 1 1 320px; font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
+  button { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--accent); background: var(--accent); color: var(--card); cursor: pointer; }
+  button.ghost { background: transparent; color: var(--accent); }
+  button:disabled { opacity: .55; cursor: progress; }
+  .badge { display: inline-block; font-size: 12px; padding: 2px 10px; border-radius: 999px; background: var(--accent-bg); color: var(--accent); }
+  .badge.ok { background: var(--ok-bg); color: var(--ok); }
+  .badge.warn { background: var(--warn-bg); color: var(--warn); }
+  .badge.bad { background: var(--bad-bg); color: var(--bad); }
+  .bar { position: relative; height: 10px; background: var(--bg); border-radius: 6px; overflow: hidden; margin-top: 10px; }
+  .bar > div { height: 100%; background: var(--accent); width: 0; }
+  .bar .min { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--warn); }
+  .msg { font-size: 13px; margin: 8px 0 0; min-height: 1em; }
+  .msg.ok { color: var(--ok); } .msg.bad { color: var(--bad); } .msg.info { color: var(--muted); }
+  .notice { border-radius: 10px; padding: 12px 16px; background: var(--warn-bg); color: var(--warn); }
+  .log-row { display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .log-row a { color: var(--accent); font-family: ui-monospace, Menlo, monospace; font-size: 12px; white-space: nowrap; }
+  .mono { font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
+  .hidden { display: none !important; }
+  hr { border: 0; border-top: 1px solid var(--line); margin: 16px 0; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Meridian Research Capital<small>Tokenised research funding · prototype</small></div>
+  <div class="row" style="margin:0">
+    <span class="badge warn" id="net-badge">Sepolia testnet</span>
+    <span class="mono" id="wallet-label"></span>
+    <button id="connect-btn">Connect wallet</button>
+  </div>
+</header>
+
+<main>
+  <div class="notice hidden" id="notice"></div>
+
+  <section class="card" id="project-card">
+    <p class="label" id="project-meta">Research project</p>
+    <div class="row" style="margin:0;justify-content:space-between">
+      <h2 id="project-name">Loading project…</h2>
+      <span class="badge" id="phase-badge">—</span>
+    </div>
+    <div class="bar"><div id="raise-bar"></div><span class="min" id="min-marker"></span></div>
+    <p class="sub" id="raise-text" style="margin-top:6px">—</p>
+    <div class="grid">
+      <div class="stat"><span class="label">Price per token</span><b id="s-price">—</b></div>
+      <div class="stat"><span class="label">Minimum raise</span><b id="s-min">—</b></div>
+      <div class="stat"><span class="label">Holders' revenue share</span><b id="s-share">—</b></div>
+      <div class="stat"><span class="label">Offering closes</span><b id="s-deadline">—</b></div>
+      <div class="stat"><span class="label">Revenue recorded</span><b id="s-revenue">—</b></div>
+      <div class="stat"><span class="label">Paid in for holders</span><b id="s-paid">—</b></div>
+    </div>
+  </section>
+
+  <section class="card hidden" id="wallet-card">
+    <div class="row" style="margin:0;justify-content:space-between">
+      <h2>Your wallet</h2>
+      <span class="badge" id="role-badge">—</span>
+    </div>
+    <div class="grid">
+      <div class="stat"><span class="label">KYC status</span><b id="w-kyc">—</b></div>
+      <div class="stat"><span class="label">mSGD balance</span><b id="w-msgd">—</b></div>
+      <div class="stat"><span class="label">Tokens held</span><b id="w-tokens">—</b></div>
+      <div class="stat"><span class="label">Payout waiting</span><b id="w-claimable">—</b></div>
+    </div>
+    <div class="row"><button class="ghost" id="faucet-btn">Get S$1,000,000 test mSGD</button></div>
+    <p class="msg" id="wallet-msg"></p>
+  </section>
+
+  <section class="card hidden" id="investor-card">
+    <h2>Invest</h2>
+    <div id="inv-offering">
+      <p class="sub">Minimum 50 tokens (S$500). Your wallet asks you to confirm twice: first to allow the payment, then to buy.</p>
+      <label class="label" for="buy-amount">Tokens to buy</label>
+      <div class="row">
+        <input id="buy-amount" type="number" min="50" step="1" value="100" style="width:120px">
+        <span id="buy-cost">Cost: S$1,000.00</span>
+        <button id="buy-btn">Buy tokens</button>
+      </div>
+    </div>
+    <div id="inv-funded" class="hidden">
+      <p class="sub">The project is funded. Claim your share of recorded revenue at any time.</p>
+      <div class="row"><button id="claim-btn">Claim payout</button></div>
+      <hr>
+      <p class="label">Transfer tokens to another KYC-approved wallet</p>
+      <div class="row">
+        <input id="tx-to" class="addr" placeholder="0x… receiver address">
+        <input id="tx-amount" type="number" min="1" step="1" placeholder="Tokens" style="width:100px">
+        <button class="ghost" id="transfer-btn">Transfer</button>
+      </div>
+    </div>
+    <div id="inv-failed" class="hidden">
+      <p class="sub">The raise didn't reach its minimum, so every investor can take their money back.</p>
+      <div class="row"><button id="refund-btn">Claim refund</button></div>
+    </div>
+    <p class="msg" id="investor-msg"></p>
+  </section>
+
+  <section class="card hidden" id="university-card">
+    <h2>University portal</h2>
+    <p class="sub" id="uni-status">Record licensing or other commercialisation revenue. The contract splits the holders' share across a fixed 100,000 tokens.</p>
+    <div id="uni-form">
+      <div class="row">
+        <div><label class="label" for="rev-amount">Revenue received (S$)</label><br><input id="rev-amount" type="number" min="0.01" step="0.01" value="50000" style="width:150px"></div>
+        <div style="flex:1 1 240px"><label class="label" for="rev-note">Note</label><br><input id="rev-note" value="Licence fee from SolarCo" style="width:100%"></div>
+      </div>
+      <p class="sub" id="rev-preview" style="margin:8px 0 0">—</p>
+      <div class="row"><button id="record-btn">Record revenue</button></div>
+    </div>
+    <p class="msg" id="university-msg"></p>
+  </section>
+
+  <section class="card hidden" id="admin-card">
+    <h2>Meridian admin</h2>
+    <p class="label">KYC approval</p>
+    <div class="row">
+      <input id="kyc-addr" class="addr" placeholder="0x… wallet address">
+      <button id="approve-btn">Approve</button>
+      <button class="ghost" id="revoke-btn">Revoke</button>
+      <button class="ghost" id="check-btn">Check</button>
+    </div>
+    <hr>
+    <p class="label">Offering</p>
+    <p class="sub" id="close-preview" style="margin:0">—</p>
+    <div class="row"><button id="close-btn">Close offering</button></div>
+    <p class="msg" id="admin-msg"></p>
+  </section>
+
+  <section class="card">
+    <h2>Activity</h2>
+    <p class="sub">Every action is a transaction on Sepolia. Click a hash to check it on Etherscan.</p>
+    <div id="log"><p class="sub">Connect your wallet to load activity.</p></div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+<script>
+// ===== 1. Paste your deployed contract addresses here =====
+const CONFIG = {
+  chainId: 11155111,                       // Sepolia
+  explorer: "https://sepolia.etherscan.io",
+  msgd: "0x8faA534DdaCf82c92092B7b93e378c440C0dF6bD",
+  kyc: "0xD4Ff4E3D84aBc8E8159c1d5AfFC3e2c8f3c2Ebfb",
+  project: "0x2a87a9db9061cff911365996b7c0a2a2e234c93e",
+  deployBlock: 11960725,                   // block number of the project's deployment (from Etherscan)
+};
+
+const MSGD_ABI = [
+  "function balanceOf(address) view returns (uint256)",
+  "function allowance(address owner, address spender) view returns (uint256)",
+  "function approve(address spender, uint256 amount) returns (bool)",
+  "function faucet()",
+];
+const KYC_ABI = [
+  "function isApproved(address) view returns (bool)",
+  "function approveWallet(address wallet)",
+  "function revokeWallet(address wallet)",
+];
+const PROJECT_ABI = [
+  "function name() view returns (string)",
+  "function symbol() view returns (string)",
+  "function owner() view returns (address)",
+  "function university() view returns (address)",
+  "function phase() view returns (uint8)",
+  "function price() view returns (uint256)",
+  "function minRaise() view returns (uint256)",
+  "function investorShareBps() view returns (uint256)",
+  "function deadline() view returns (uint256)",
+  "function totalSupply() view returns (uint256)",
+  "function TOTAL_TOKENS() view returns (uint256)",
+  "function balanceOf(address) view returns (uint256)",
+  "function claimable(address) view returns (uint256)",
+  "function owedFor(uint256 grossAmount) view returns (uint256)",
+  "function totalRevenueRecorded() view returns (uint256)",
+  "function totalPaidToInvestors() view returns (uint256)",
+  "function buy(uint256 tokens)",
+  "function closeOffering()",
+  "function refund()",
+  "function recordRevenue(uint256 grossAmount, string note)",
+  "function claim()",
+  "function transfer(address to, uint256 amount) returns (bool)",
+  "event Bought(address indexed investor, uint256 tokens, uint256 cost)",
+  "event OfferingClosed(uint8 result, uint256 raised)",
+  "event Refunded(address indexed investor, uint256 tokens, uint256 amount)",
+  "event RevenueRecorded(uint256 grossRevenue, uint256 investorPool, uint256 paidIn, string note)",
+  "event Claimed(address indexed investor, uint256 amount)",
+];
+
+const PHASES = [
+  { text: "Offering open", cls: "" },
+  { text: "Funded", cls: "ok" },
+  { text: "Raise failed · refunds open", cls: "bad" },
+];
+
+let provider, signer, account, contracts = {}, state = {};
+const $ = (id) => document.getElementById(id);
+const show = (id, on) => $(id).classList.toggle("hidden", !on);
+
+// ===== 2. Formatting helpers =====
+function sgd(cents) {
+  const n = Number(ethers.formatUnits(cents, 2));
+  return "S$" + n.toLocaleString("en-SG", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function short(addr) { return addr.slice(0, 6) + "…" + addr.slice(-4); }
+function txLink(hash) { return `<a href="${CONFIG.explorer}/tx/${hash}" target="_blank" rel="noopener">${hash.slice(0, 10)}…</a>`; }
+function say(id, text, kind = "info") { const el = $(id); el.className = "msg " + kind; el.innerHTML = text; }
+
+// Turns wallet and contract errors into a readable sentence.
+function friendlyError(e) {
+  if (e?.code === "ACTION_REJECTED" || e?.info?.error?.code === 4001 || e?.code === 4001) {
+    return "You cancelled the transaction in your wallet.";
+  }
+  const raw = e?.reason || e?.revert?.args?.[0] || e?.info?.error?.data?.message || e?.info?.error?.message
+    || e?.error?.message || e?.shortMessage || e?.message || String(e);
+  // OpenZeppelin reports some failures as coded errors instead of sentences.
+  const codes = {
+    "0xe450d38c": "Not enough mSGD in this wallet. Click \"Get S$1,000,000 test mSGD\" first.",
+    "0xfb8f41b2": "The payment wasn't allowed. Try again and confirm both wallet pop-ups.",
+    "0x118cdaa7": "Only the Meridian admin wallet can do this.",
+  };
+  const code = Object.keys(codes).find((c) => raw.includes(c) || JSON.stringify(e?.data ?? e?.info ?? "").includes(c));
+  if (code) return codes[code];
+  return raw.replace(/^execution reverted:?\s*/i, "").replace(/^.*reverted with reason string\s*/i, "").replace(/^'|'$/g, "");
+}
+
+// Sends a transaction, shows progress, waits for it to be mined.
+async function send(msgId, btn, label, txPromiseFn) {
+  btn.disabled = true;
+  try {
+    say(msgId, label + ": confirm in your wallet…");
+    const tx = await txPromiseFn();
+    say(msgId, label + ": waiting for the block… " + txLink(tx.hash));
+    await tx.wait();
+    say(msgId, label + " done. " + txLink(tx.hash), "ok");
+    await refresh();
+    return true;
+  } catch (e) {
+    say(msgId, friendlyError(e), "bad");
+    return false;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ERC-20 payments need permission first: approve, then the actual action.
+async function ensureAllowance(msgId, btn, cents) {
+  const allowed = await contracts.msgd.allowance(account, CONFIG.project);
+  if (allowed >= cents) return true;
+  return send(msgId, btn, "Step 1 of 2: allow payment of " + sgd(cents),
+    () => contracts.msgd.approve(CONFIG.project, cents));
+}
+
+// ===== 3. Wallet connection =====
+function configReady() {
+  return [CONFIG.msgd, CONFIG.kyc, CONFIG.project].every((a) => ethers.isAddress(a));
+}
+
+function notice(html) { $("notice").innerHTML = html; show("notice", !!html); }
+
+async function connect() {
+  if (!window.ethereum) {
+    notice('No wallet found. Install <a href="https://metamask.io/download/" target="_blank" rel="noopener">MetaMask</a>, then reload this page.');
+    return;
+  }
+  if (!configReady()) {
+    notice("Contract addresses aren't set yet. Paste them into CONFIG at the top of the script in index.html.");
+    return;
+  }
+  try {
+    provider = new ethers.BrowserProvider(window.ethereum);
+    const chainId = Number((await provider.getNetwork()).chainId);
+    if (chainId !== CONFIG.chainId) {
+      notice('Your wallet is on the wrong network. <button id="switch-btn">Switch to Sepolia</button>');
+      $("switch-btn").onclick = async () => {
+        try {
+          await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x" + CONFIG.chainId.toString(16) }] });
+        } catch (e) { notice(friendlyError(e)); }
+      };
+      return;
+    }
+    await provider.send("eth_requestAccounts", []);
+    signer = await provider.getSigner();
+    account = await signer.getAddress();
+    contracts = {
+      msgd: new ethers.Contract(CONFIG.msgd, MSGD_ABI, signer),
+      kyc: new ethers.Contract(CONFIG.kyc, KYC_ABI, signer),
+      project: new ethers.Contract(CONFIG.project, PROJECT_ABI, signer),
+    };
+    notice("");
+    $("connect-btn").classList.add("hidden");
+    $("wallet-label").textContent = short(account);
+    await refresh();
+  } catch (e) {
+    notice(friendlyError(e));
+  }
+}
+
+// ===== 4. Read everything from the chain and redraw =====
+async function refresh() {
+  const p = contracts.project;
+  const [name, symbol, owner, university, phase, price, minRaise, shareBps, deadline, sold, total, revenue, paid] =
+    await Promise.all([p.name(), p.symbol(), p.owner(), p.university(), p.phase(), p.price(), p.minRaise(),
+      p.investorShareBps(), p.deadline(), p.totalSupply(), p.TOTAL_TOKENS(), p.totalRevenueRecorded(), p.totalPaidToInvestors()]);
+  const [msgdBal, tokens, claimable, kycOk] = await Promise.all([
+    contracts.msgd.balanceOf(account), p.balanceOf(account), p.claimable(account), contracts.kyc.isApproved(account)]);
+  state = { owner, university, phase: Number(phase), price, minRaise, shareBps, sold, total, tokens, claimable, msgdBal };
+
+  const raised = sold * price, target = total * price;
+  $("project-name").textContent = name;
+  $("project-meta").textContent = `Revenue rights token · ${symbol} · ${short(CONFIG.project)}`;
+  $("phase-badge").textContent = PHASES[state.phase].text;
+  $("phase-badge").className = "badge " + PHASES[state.phase].cls;
+  $("raise-bar").style.width = (Number(sold) / Number(total) * 100).toFixed(2) + "%";
+  $("min-marker").style.left = (Number(minRaise) / Number(target) * 100).toFixed(2) + "%";
+  $("raise-text").textContent = `${sgd(raised)} raised of ${sgd(target)} · ${Number(sold).toLocaleString("en-SG")} of ${Number(total).toLocaleString("en-SG")} tokens sold · orange line = minimum`;
+  $("s-price").textContent = sgd(price);
+  $("s-min").textContent = sgd(minRaise);
+  $("s-share").textContent = (Number(shareBps) / 100) + "%";
+  $("s-deadline").textContent = new Date(Number(deadline) * 1000).toLocaleDateString("en-SG", { day: "numeric", month: "short", year: "numeric" });
+  $("s-revenue").textContent = sgd(revenue);
+  $("s-paid").textContent = sgd(paid);
+
+  const role = account === owner ? "admin" : account === university ? "university" : "investor";
+  $("role-badge").textContent = { admin: "Meridian admin", university: "University", investor: "Investor" }[role];
+  $("w-kyc").textContent = kycOk ? "Approved" : "Not approved";
+  $("w-msgd").textContent = sgd(msgdBal);
+  $("w-tokens").textContent = Number(tokens).toLocaleString("en-SG");
+  $("w-claimable").textContent = sgd(claimable);
+  show("wallet-card", true);
+
+  show("investor-card", role === "investor");
+  show("inv-offering", state.phase === 0);
+  show("inv-funded", state.phase === 1);
+  show("inv-failed", state.phase === 2);
+  show("university-card", role === "university");
+  show("uni-form", state.phase === 1);
+  $("uni-status").textContent = state.phase === 1
+    ? "Record licensing or other commercialisation revenue. The contract splits the holders' share across a fixed 100,000 tokens."
+    : "Revenue can be recorded once the project is funded.";
+  show("admin-card", role === "admin");
+  $("close-preview").textContent = state.phase === 0
+    ? `Raised ${sgd(raised)} against a minimum of ${sgd(minRaise)}. Closing now would ${raised >= minRaise ? "fund the project and send the money to the university" : "fail the raise and open refunds"}.`
+    : "The offering is closed.";
+  show("close-btn", state.phase === 0);
+
+  updateBuyCost();
+  updateRevenuePreview();
+  loadActivity();
+}
+
+async function loadActivity() {
+  const p = contracts.project;
+  const names = ["Bought", "OfferingClosed", "Refunded", "RevenueRecorded", "Claimed"];
+  try {
+    const batches = await Promise.all(names.map((n) => p.queryFilter(p.filters[n](), CONFIG.deployBlock, "latest")));
+    const events = batches.flat().sort((a, b) => b.blockNumber - a.blockNumber || b.index - a.index).slice(0, 20);
+    if (!events.length) { $("log").innerHTML = '<p class="sub">No activity yet.</p>'; return; }
+    $("log").innerHTML = events.map((ev) => {
+      const a = ev.args;
+      const text = {
+        Bought: () => `${short(a.investor)} bought ${Number(a.tokens).toLocaleString("en-SG")} tokens for ${sgd(a.cost)}`,
+        OfferingClosed: () => `Offering closed: ${Number(a.result) === 1 ? "funded" : "failed, refunds open"} (raised ${sgd(a.raised)})`,
+        Refunded: () => `${short(a.investor)} was refunded ${sgd(a.amount)}`,
+        RevenueRecorded: () => `University recorded ${sgd(a.grossRevenue)} (${a.note}). ${sgd(a.paidIn)} paid in for holders`,
+        Claimed: () => `${short(a.investor)} claimed ${sgd(a.amount)}`,
+      }[ev.eventName]();
+      return `<div class="log-row"><span>${text}</span>${txLink(ev.transactionHash)}</div>`;
+    }).join("");
+  } catch (e) {
+    $("log").innerHTML = `<p class="sub">Couldn't load activity: ${friendlyError(e)}. Check deployBlock in CONFIG.</p>`;
+  }
+}
+
+// ===== 5. Button actions =====
+function readWholeTokens(id, msgId, min) {
+  const v = Number($(id).value);
+  if (!Number.isInteger(v) || v < min) { say(msgId, `Enter a whole number of at least ${min}.`, "bad"); return null; }
+  return BigInt(v);
+}
+
+function updateBuyCost() {
+  const v = Number($("buy-amount").value);
+  $("buy-cost").textContent = "Cost: " + (Number.isInteger(v) && v > 0 && state.price ? sgd(BigInt(v) * state.price) : "—");
+}
+
+async function updateRevenuePreview() {
+  if (state.phase !== 1 || !contracts.project) return;
+  let cents;
+  try { cents = ethers.parseUnits($("rev-amount").value || "0", 2); } catch { $("rev-preview").textContent = "Use at most 2 decimal places."; return; }
+  if (cents <= 0n) { $("rev-preview").textContent = "—"; return; }
+  const owed = await contracts.project.owedFor(cents);
+  const pool = cents * state.shareBps / 10000n;
+  const perToken = Number(pool) / Number(state.total) / 100;
+  const perTokenText = "S$" + perToken.toLocaleString("en-SG", { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+  $("rev-preview").textContent = `Holders' share: ${sgd(pool)}, which is ${perTokenText} per token. You pay in ${sgd(owed)} now for the ${Number(state.sold).toLocaleString("en-SG")} tokens sold; the share for unsold tokens stays with you.`;
+}
+
+$("connect-btn").onclick = connect;
+$("buy-amount").oninput = () => { say("investor-msg", ""); updateBuyCost(); };
+$("rev-amount").oninput = () => { say("university-msg", ""); updateRevenuePreview(); };
+$("tx-to").oninput = $("tx-amount").oninput = () => say("investor-msg", "");
+$("kyc-addr").oninput = () => say("admin-msg", "");
+
+$("faucet-btn").onclick = (e) => send("wallet-msg", e.target, "Test mSGD", () => contracts.msgd.faucet());
+
+$("buy-btn").onclick = async (e) => {
+  const tokens = readWholeTokens("buy-amount", "investor-msg", 50);
+  if (tokens === null) return;
+  const cost = tokens * state.price;
+  if (cost > state.msgdBal) return say("investor-msg", `This costs ${sgd(cost)} but you have ${sgd(state.msgdBal)}. Click "Get S$1,000,000 test mSGD" first.`, "bad");
+  if (!(await ensureAllowance("investor-msg", e.target, cost))) return;
+  await send("investor-msg", e.target, `Step 2 of 2: buy ${tokens} tokens`, () => contracts.project.buy(tokens));
+};
+
+$("claim-btn").onclick = (e) => send("investor-msg", e.target, "Claim", () => contracts.project.claim());
+$("refund-btn").onclick = (e) => send("investor-msg", e.target, "Refund", () => contracts.project.refund());
+
+$("transfer-btn").onclick = (e) => {
+  const to = $("tx-to").value.trim();
+  if (!ethers.isAddress(to)) return say("investor-msg", "Enter a valid wallet address (0x…).", "bad");
+  const tokens = readWholeTokens("tx-amount", "investor-msg", 1);
+  if (tokens === null) return;
+  send("investor-msg", e.target, `Transfer ${tokens} tokens`, () => contracts.project.transfer(to, tokens));
+};
+
+$("record-btn").onclick = async (e) => {
+  let cents;
+  try { cents = ethers.parseUnits($("rev-amount").value || "0", 2); } catch { return say("university-msg", "Use at most 2 decimal places.", "bad"); }
+  if (cents <= 0n) return say("university-msg", "Enter a revenue amount above zero.", "bad");
+  const note = $("rev-note").value.trim();
+  if (!note) return say("university-msg", "Add a short note, e.g. who paid the fee.", "bad");
+  const owed = await contracts.project.owedFor(cents);
+  if (owed > state.msgdBal) return say("university-msg", `You need ${sgd(owed)} of mSGD to pay holders but have ${sgd(state.msgdBal)}. Click "Get S$1,000,000 test mSGD" first.`, "bad");
+  if (!(await ensureAllowance("university-msg", e.target, owed))) return;
+  await send("university-msg", e.target, "Step 2 of 2: record revenue", () => contracts.project.recordRevenue(cents, note));
+};
+
+function kycAddress() {
+  const a = $("kyc-addr").value.trim();
+  if (!ethers.isAddress(a)) { say("admin-msg", "Enter a valid wallet address (0x…).", "bad"); return null; }
+  return a;
+}
+$("approve-btn").onclick = (e) => { const a = kycAddress(); if (a) send("admin-msg", e.target, "Approve " + short(a), () => contracts.kyc.approveWallet(a)); };
+$("revoke-btn").onclick = (e) => { const a = kycAddress(); if (a) send("admin-msg", e.target, "Revoke " + short(a), () => contracts.kyc.revokeWallet(a)); };
+$("check-btn").onclick = async () => {
+  const a = kycAddress(); if (!a) return;
+  const ok = await contracts.kyc.isApproved(a);
+  say("admin-msg", `${short(a)} is ${ok ? "approved" : "not approved"}.`, ok ? "ok" : "info");
+};
+$("close-btn").onclick = (e) => send("admin-msg", e.target, "Close offering", () => contracts.project.closeOffering());
+
+if (window.ethereum) {
+  window.ethereum.on?.("accountsChanged", () => location.reload());
+  window.ethereum.on?.("chainChanged", () => location.reload());
+}
+</script>
+</body>
+</html>
