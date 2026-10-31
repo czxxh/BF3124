@@ -96,7 +96,8 @@
       <div class="stat"><span class="label">Tokens held</span><b id="w-tokens">—</b></div>
       <div class="stat"><span class="label">Payout waiting</span><b id="w-claimable">—</b></div>
     </div>
-    <div class="row"><button class="ghost" id="faucet-btn">Get S$1,000,000 test mSGD</button></div>
+    <p class="sub" style="margin:0">Test money standing in for tokenised bank deposits. In production, you deposit SGD with the partner bank and it issues the same amount of tokenised SGD (mSGD) to your wallet, 1:1.</p>
+    <div class="row"><button class="ghost" id="faucet-btn">Simulate bank deposit: S$1,000,000</button></div>
     <p class="msg" id="wallet-msg"></p>
   </section>
 
@@ -247,7 +248,7 @@ function friendlyError(e) {
     || e?.error?.message || e?.shortMessage || e?.message || String(e);
   // OpenZeppelin reports some failures as coded errors instead of sentences.
   const codes = {
-    "0xe450d38c": "Not enough mSGD in this wallet. Click \"Get S$1,000,000 test mSGD\" first.",
+    "0xe450d38c": "Not enough mSGD in this wallet. Click \"Simulate bank deposit\" first.",
     "0xfb8f41b2": "The payment wasn't allowed. Try again and confirm both wallet pop-ups.",
     "0x118cdaa7": "Only the Meridian admin wallet can do this.",
   };
@@ -434,13 +435,13 @@ $("rev-amount").oninput = () => { say("university-msg", ""); updateRevenuePrevie
 $("tx-to").oninput = $("tx-amount").oninput = () => say("investor-msg", "");
 $("kyc-addr").oninput = () => say("admin-msg", "");
 
-$("faucet-btn").onclick = (e) => send("wallet-msg", e.target, "Test mSGD", () => contracts.msgd.faucet());
+$("faucet-btn").onclick = (e) => send("wallet-msg", e.target, "Simulated bank deposit", () => contracts.msgd.faucet());
 
 $("buy-btn").onclick = async (e) => {
   const tokens = readWholeTokens("buy-amount", "investor-msg", 50);
   if (tokens === null) return;
   const cost = tokens * state.price;
-  if (cost > state.msgdBal) return say("investor-msg", `This costs ${sgd(cost)} but you have ${sgd(state.msgdBal)}. Click "Get S$1,000,000 test mSGD" first.`, "bad");
+  if (cost > state.msgdBal) return say("investor-msg", `This costs ${sgd(cost)} but you have ${sgd(state.msgdBal)}. Click "Simulate bank deposit" first.`, "bad");
   if (!(await ensureAllowance("investor-msg", e.target, cost))) return;
   await send("investor-msg", e.target, `Step 2 of 2: buy ${tokens} tokens`, () => contracts.project.buy(tokens));
 };
@@ -463,7 +464,7 @@ $("record-btn").onclick = async (e) => {
   const note = $("rev-note").value.trim();
   if (!note) return say("university-msg", "Add a short note, e.g. who paid the fee.", "bad");
   const owed = await contracts.project.owedFor(cents);
-  if (owed > state.msgdBal) return say("university-msg", `You need ${sgd(owed)} of mSGD to pay holders but have ${sgd(state.msgdBal)}. Click "Get S$1,000,000 test mSGD" first.`, "bad");
+  if (owed > state.msgdBal) return say("university-msg", `You need ${sgd(owed)} of mSGD to pay holders but have ${sgd(state.msgdBal)}. Click "Simulate bank deposit" first.`, "bad");
   if (!(await ensureAllowance("university-msg", e.target, owed))) return;
   await send("university-msg", e.target, "Step 2 of 2: record revenue", () => contracts.project.recordRevenue(cents, note));
 };
