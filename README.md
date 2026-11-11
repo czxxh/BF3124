@@ -18,7 +18,9 @@ Universities raise research funding by selling **revenue rights tokens**: a shar
 |---|---|---|
 | MockSGD | Test SGD money standing in for a bank's tokenised deposits | [0x8faA534DdaCf82c92092B7b93e378c440C0dF6bD](https://sepolia.etherscan.io/address/0x8faA534DdaCf82c92092B7b93e378c440C0dF6bD) |
 | KYCRegistry | Meridian's list of approved wallets | [0xD4Ff4E3D84aBc8E8159c1d5AfFC3e2c8f3c2Ebfb](https://sepolia.etherscan.io/address/0xD4Ff4E3D84aBc8E8159c1d5AfFC3e2c8f3c2Ebfb) |
-| RevenueRightsToken | The "Next-gen Solar Cells" project (token SOLAR) | [0x2a87a9db9061cff911365996b7c0a2a2e234c93e](https://sepolia.etherscan.io/address/0x2a87a9db9061cff911365996b7c0a2a2e234c93e) |
+| RevenueRightsToken | The "Next-gen Solar Cells" project (token SOLAR) | [0x22D6f8e8Aaf4D93e7b4FB2c3fB37118a95795276](https://sepolia.etherscan.io/address/0x22D6f8e8Aaf4D93e7b4FB2c3fB37118a95795276) |
+
+A full rehearsal of the lifecycle is on an earlier copy of the project at [0x2a87a9db9061cff911365996b7c0a2a2e234c93e](https://sepolia.etherscan.io/address/0x2a87a9db9061cff911365996b7c0a2a2e234c93e): KYC approvals, buying, a funded close, recorded revenue, claimed payouts, and a transfer between investors.
 
 ## Files
 
@@ -37,4 +39,4 @@ Universities raise research funding by selling **revenue rights tokens**: a shar
 
 ## What's simulated
 
-MockSGD is free test money; KYC approval is manual; revenue is reported by the university wallet (production would need an auditor or bank data feed as an oracle); and Sepolia is a public test network rather than a permissioned one.
+MockSGD is test money: the "Simulate bank deposit" button stands in for depositing SGD with a partner bank, which would issue tokenised deposits 1:1; KYC approval is manual; revenue is reported by the university wallet (production would need an auditor or bank data feed as an oracle); and Sepolia is a public test network rather than a permissioned one.
